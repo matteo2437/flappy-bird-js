@@ -39,6 +39,10 @@ export class Sketch {
     return 1000 / frameDuration;
   }
 
+  private updateFps = () => {
+    this.time = Date.now()
+  }
+
   private animate = () => {
     this.request = requestAnimationFrame(this.animate)
     const realFps = this.getCurrentFps()
@@ -46,7 +50,7 @@ export class Sketch {
     if(realFps > this.options.fpsLimit)
       return
 
-    this.time = Date.now()
+    this.updateFps()
     this.clear();
     this.callback?.({
       canvas: this.canvas,
