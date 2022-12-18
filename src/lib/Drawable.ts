@@ -1,20 +1,22 @@
-import { SketchOptions, SketchRes } from "./Sketch";
+import { SketchRes } from "./Sketch";
 
 export abstract class Drawable {
-  protected fps?: number;
-  protected sketchOptions?: SketchOptions;
-  protected canvas?: HTMLCanvasElement;
+  protected sketchRes?: SketchRes;
+
+  protected get fps() { return this.sketchRes?.fps }
+  protected get canvas() { return this.sketchRes?.canvas }
+  protected get sketchOptions() { return this.sketchRes?.options }
   protected get ctx() { return this.canvas?.getContext('2d') }
 
-  abstract onDraw: () => void
+  protected abstract onDraw: () => void
   
   public draw = (res: SketchRes) => {
     this.updateOptions(res)
     this.onDraw()
   }
 
-  protected getDistance = (speed: number) => {
-    return speed * this.getFrameTime()
+  protected getDistanceFromSpeed = (speed: number) => {
+    return speed * this.getFrameTime() * (this.sketchOptions?.pixelMeterSize ?? 1)
   }
 
   protected getFrameTime = () => {
@@ -22,8 +24,6 @@ export abstract class Drawable {
   }
 
   private updateOptions = (res: SketchRes) => {
-    this.fps = res.fps
-    this.canvas = res.canvas
-    this.sketchOptions = res.options
+    this.sketchRes = res
   }
 }
