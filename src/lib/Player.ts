@@ -39,7 +39,7 @@ export class Player extends CollisionableObject {
       return
 
     this.updateSpeed()
-    this.position.y += this.getDistanceFromSpeed(this.ySpeed)
+    this.position.y = this.getNextCoords().y
 
     this.ctx.beginPath();
     this.ctx.arc(

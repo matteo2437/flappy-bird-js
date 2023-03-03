@@ -69,8 +69,8 @@ export class Sketch {
   public isObjectOut(obj: CollisionableObject) {
     const nextCoords = obj.getNextCoords()
 
-    return nextCoords.x > this.canvas.width ||
-      nextCoords.y > this.canvas.height ||
+    return nextCoords.x + obj.boundingBox.width > this.canvas.width ||
+      nextCoords.y + obj.boundingBox.height > this.canvas.height ||
       nextCoords.x < 0 ||
       nextCoords.y < 0
   }

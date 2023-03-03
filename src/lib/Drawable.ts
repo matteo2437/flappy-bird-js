@@ -10,7 +10,7 @@ export abstract class Drawable {
 
   protected abstract onDraw: () => void
   
-  public draw = (res: SketchRes) => {
+  public draw(res: SketchRes) {
     this.updateOptions(res)
     this.onDraw()
   }

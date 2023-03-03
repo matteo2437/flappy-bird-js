@@ -2,6 +2,7 @@ import { CollisionableObject } from "./CollisionableObject"
 import { Drawable } from "./Drawable"
 import { PipePiece } from "./PipePiece"
 import { Player } from "./Player"
+import { SketchRes } from "./Sketch"
 
 export interface Pipe {
   readonly top: PipePiece,
@@ -17,10 +18,26 @@ export class Pipes extends Drawable {
 
   private pipes: Pipe[] = []
 
-  constructor(player: Player) {
+  private readonly onPipeShift: () => void;
+
+  constructor(player: Player, onPipeShift: () => void) {
     super()
 
     this.xSpeed = player.xSpeed;
+    this.onPipeShift = onPipeShift;
+  }
+
+  public getNearestPipe(xCoords: number) {
+    return this.pipes
+      .filter(p => p.top.position.x >= xCoords)
+      .reduce((prev, curr) => {
+        const prevPipe = prev.top.position;
+        const currPipe = curr.top.position;
+
+        return prevPipe.x < currPipe.x 
+          ? prev 
+          : curr;
+      });
   }
 
   public isSomethingColliding(obj: CollisionableObject) {
@@ -81,6 +98,8 @@ export class Pipes extends Drawable {
     const furthestPipe = Math.max(...pipes.map(p => p.top.position.x))
 
     pipe.top.position.x = furthestPipe + this.pipeDistance
+
+    this.onPipeShift()
     return this.setPipeTopHeight(pipe)
   }
 
