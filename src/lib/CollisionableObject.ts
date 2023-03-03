@@ -3,6 +3,10 @@ import { Coords } from "../abstractions/Coords";
 import { Drawable } from "./Drawable";
 
 export abstract class CollisionableObject extends Drawable {
+
+  abstract xSpeed: number;
+  abstract ySpeed: number;
+
   public position: Coords = {
     x: 0,
     y: 0
@@ -13,17 +17,27 @@ export abstract class CollisionableObject extends Drawable {
     width: 100,
   };
 
-  public isCollaiding(obj: CollisionableObject) {
-    const startX = this.position.x
+  public getNextCoords(): Coords {
+    return {
+      x: this.position.x + this.getDistanceFromSpeed(this.xSpeed),
+      y: this.position.y +this.getDistanceFromSpeed(this.ySpeed),
+    }
+  }
+
+  public isColliding(obj: CollisionableObject) {
+    const nextCoords = this.getNextCoords() 
+    const nextObjCoords = obj.getNextCoords() 
+
+    const startX = nextCoords.x
     const endX = startX + this.boundingBox.width
 
-    const startY = this.position.y
+    const startY = nextCoords.y
     const endY = startY + this.boundingBox.height
 
-    const objStartX = obj.position.x
+    const objStartX = nextObjCoords.x
     const objEndX = objStartX + obj.boundingBox.width
 
-    const objStartY = obj.position.y
+    const objStartY = nextObjCoords.y
     const objEndY = objStartY + obj.boundingBox.height
 
     const isStartXInside = 

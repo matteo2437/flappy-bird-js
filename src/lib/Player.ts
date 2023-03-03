@@ -13,7 +13,8 @@ export class Player extends CollisionableObject {
 
   private readonly gForce = 9.81;
 
-  private ySpeed = 0;
+  public ySpeed = 0;
+  public xSpeed = 2
 
   private keyDown = (e: KeyboardEvent) => {
     const action = {

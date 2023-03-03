@@ -1,6 +1,7 @@
 import { CollisionableObject } from "./CollisionableObject"
 import { Drawable } from "./Drawable"
 import { PipePiece } from "./PipePiece"
+import { Player } from "./Player"
 
 export interface Pipe {
   readonly top: PipePiece,
@@ -11,16 +12,22 @@ export class Pipes extends Drawable {
   private readonly pipeGap = 300
   private readonly pipeDistance = 500
   private readonly pipeWidth = 150
-  private readonly xSpeed = 2
   private xDelta = 0 
+  private xSpeed: number;
 
   private pipes: Pipe[] = []
 
-  public isSomethingCollaiding(obj: CollisionableObject) {
+  constructor(player: Player) {
+    super()
+
+    this.xSpeed = player.xSpeed;
+  }
+
+  public isSomethingColliding(obj: CollisionableObject) {
     return this.pipes
       .some(p =>
-        p.bottom.isCollaiding(obj) ||
-        p.top.isCollaiding(obj)
+        p.bottom.isColliding(obj) ||
+        p.top.isColliding(obj)
       )
   }
 

@@ -2,6 +2,9 @@ import { Coords } from "../abstractions/Coords";
 import { CollisionableObject } from "./CollisionableObject";
 
 export class PipePiece extends CollisionableObject {
+  public xSpeed = 0;
+  public ySpeed = 0;
+
   constructor(public position: Coords) {
     super()
     this.position = position

@@ -1,4 +1,5 @@
 import { Callback } from "../abstractions/Callback";
+import { CollisionableObject } from "./CollisionableObject";
 
 export interface SketchOptions {
   readonly fpsLimit: number;
@@ -63,6 +64,15 @@ export class Sketch {
     this.canvas
       .getContext('2d')
       ?.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  public isObjectOut(obj: CollisionableObject) {
+    const nextCoords = obj.getNextCoords()
+
+    return nextCoords.x > this.canvas.width ||
+      nextCoords.y > this.canvas.height ||
+      nextCoords.x < 0 ||
+      nextCoords.y < 0
   }
 
   public draw = (callback: SketchCallback) => {
