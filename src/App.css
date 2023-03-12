@@ -1,6 +1,4 @@
 .game-container {
-  display: flex;
-  flex-direction: row;
   height: 100vh;
   aspect-ratio: 0.75;
   background-color: rgb(27, 27, 27);
@@ -12,6 +10,38 @@
 }
 
 h1 {
-  padding: 64px;
+  margin: 0px;
   color: white;
+}
+
+.neuron {
+  width: 48px;
+  height: 48px;
+  background-color: red;
+  border-radius: 100%;
+  margin: 4px;
+}
+
+.layer {
+  display: flex;
+  flex-direction: row;
+}
+
+.model {
+  height: 1000px;
+  width: 600px;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+}
+
+.game-controls {
+  position: absolute;
+  top: 0px;
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+  padding: 8px;
 }
