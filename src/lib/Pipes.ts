@@ -11,7 +11,7 @@ export interface Pipe {
 
 export class Pipes extends Drawable {
   private readonly pipeGap = 300
-  private readonly pipeDistance = 500
+  private readonly pipeDistance = 600
   private readonly pipeWidth = 150
   private xDelta = 0 
   private xSpeed: number;
@@ -20,16 +20,16 @@ export class Pipes extends Drawable {
 
   private readonly onPipeShift: () => void;
 
-  constructor(player: Player, onPipeShift: () => void) {
+  constructor(xSpeed: number, onPipeShift: () => void) {
     super()
 
-    this.xSpeed = player.xSpeed;
+    this.xSpeed = xSpeed;
     this.onPipeShift = onPipeShift;
   }
 
   public getNearestPipe(xCoords: number) {
     return this.pipes
-      .filter(p => p.top.position.x >= xCoords)
+      .filter(p => p.top.position.x >= xCoords - this.pipeWidth)
       .reduce((prev, curr) => {
         const prevPipe = prev.top.position;
         const currPipe = curr.top.position;
@@ -52,7 +52,7 @@ export class Pipes extends Drawable {
     return pipeIndex * 
       this.pipeDistance + 
       this.pipeWidth + 
-      (this.canvas?.width ?? 0)
+      2 * (this.canvas?.width ?? 0) / 3
   }
 
   private init = () => {

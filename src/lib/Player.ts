@@ -3,7 +3,7 @@ import { CollisionableObject } from "./CollisionableObject";
 export class Player extends CollisionableObject {
   public position = {
     x: 100,
-    y: 0
+    y: 500
   };
   
   public boundingBox = {

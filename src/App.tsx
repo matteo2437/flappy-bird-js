@@ -4,8 +4,7 @@ import './App.css';
 import { Pipes } from './lib/Pipes';
 import { Player } from './lib/Player';
 import { Sketch } from './lib/Sketch';
-
-
+import { cloneDeep } from 'lodash'
 interface GameData {
   readonly y: number,
   readonly distanceFromPipe: number
@@ -19,11 +18,11 @@ const stream = new Subject<GameData>()
 const getNormalizedValue = (value: number, range: { min: number, max: number }) => {
   const newValue = (value - range.min) / (range.max - range.min);
 
-  return Math.min(newValue, 1) * 2 - 1; 
+  return Math.min(newValue, 1); 
 }
 
 const random = () => {
-  return (Math.random() * 2) - 1
+  return (Math.random() * 10) - 5
 }
 
 
@@ -36,6 +35,7 @@ interface Weight {
 interface Neuron {
   readonly weights: Weight[];
   bias: number;
+  value: number;
 }
 interface Layer {
   readonly neurons: Neuron[];
@@ -46,7 +46,6 @@ interface LayerCreate {
 }
 
 class Model {
-  public lastInputs: number[] = [];
   public layers: Layer[] = [];
 
   public add(args: LayerCreate) {
@@ -68,8 +67,6 @@ class Model {
   }
 
   public getOutput(inputs: number[]) {
-    this.lastInputs = inputs
-
     return this.getOutputLayer(this.layers.length - 1, inputs)
   }
 
@@ -80,11 +77,16 @@ class Model {
 
     return this.layers[layerIndex]
       .neurons
-      .map(n => this.getNeuronOutput(n, layerInputs))
+      .map(n => {
+        const value = this.getNeuronOutput(n, layerInputs)
+        n.value = value;        
+        return value
+      })
   }
 
   private initNeuron(inputShape: number): Neuron {
     return {
+      value: 0,
       bias: random(),
       weights: this.initWeights(inputShape)
     }
@@ -119,7 +121,7 @@ class Model {
   }
 
   private activationFunction(value: number) {
-    return 1 / ( 1 + Math.exp(-value) )
+    return 1 / ( 1 + Math.exp(-value))
   }
 
   public randomizeWeights(percent: number) {
@@ -142,16 +144,15 @@ class Model {
 
 const model = new Model()
 
-model.add({ units: 4, inputShape: 4  })
-model.add({ units: 4 })
-model.add({ units: 1 })
+model.add({ units: 5, inputShape: 4 })
+model.add({ units: 5 })
+model.add({ units: 2 })
 
-console.log(model.layers)
 //console.log(model.getOutput([random(), random(), random(), random()]))
 
 
-const drawModel = (canvas?: HTMLCanvasElement | null) => {
-  if(!canvas)
+const drawModel = (canvas: HTMLCanvasElement | null, model?: Model) => {
+  if(!canvas || !model)
     return
 
   const ctx = canvas.getContext("2d");
@@ -170,8 +171,6 @@ const drawModel = (canvas?: HTMLCanvasElement | null) => {
   const neuronGap = 32
 
   const neuronSize = 32
-  const neuronColor = '#ff0000'
-
 
   const getNeuronCoords = (layerIndex: number, neuronIndex: number, neuronsNumber: number) => {
     const layerWidth = (neuronSize + neuronGap) * neuronsNumber
@@ -197,13 +196,12 @@ const drawModel = (canvas?: HTMLCanvasElement | null) => {
             .weights
             .forEach((w, index) => {
               const neuronToConnectCoords = getNeuronCoords(layerIndex - 1, index, neuron.weights.length)
-              const width = ((w.flowValue + 1) / 2) * 3
-            
+              const width = Math.abs((w.flowValue / 10) * 10)
 
               ctx.beginPath();
               ctx.moveTo(coords.x, coords.y)
               ctx.lineTo(neuronToConnectCoords.x, neuronToConnectCoords.y)
-              ctx.strokeStyle = "#fff";
+              ctx.strokeStyle = w.flowValue > 0 ? '#00ff00' : '#0000ff';
               ctx.lineWidth = width;
               ctx.stroke()
               ctx.closePath()
@@ -217,13 +215,44 @@ const drawModel = (canvas?: HTMLCanvasElement | null) => {
             0, 
             2 * Math.PI
           );
-          ctx.fillStyle = neuronColor;
+          ctx.fillStyle = neuron.value > 0.5
+            ? `rgba(0, 255, 0, ${neuron.value})`
+            : `rgba(0, 0, 255, ${neuron.value})`
           ctx.fill();
           ctx.closePath()
         })
     })
 }
 
+const createModels = (baseModel: Model, randomizeWeights = 0.1) => {
+  const models = [...Array(agentsNum)].map(() => {
+    const newModel = new Model()
+    newModel.layers = cloneDeep(baseModel.layers); 
+    newModel.randomizeWeights(randomizeWeights)
+
+    return {
+      model: newModel,
+      points: 0,
+      lostIndex: -1,
+      lost: false
+    }
+  })
+
+  models.pop()
+  models.unshift({
+    model: baseModel,
+    points: 0,
+    lostIndex: -1,
+    lost: false
+  })
+
+  return models
+}
+
+
+const agentsNum = 1000
+let models = createModels(model, 1)
+let epoch = 0
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -235,9 +264,9 @@ function App() {
     const sub = stream
       .pipe(throttleTime(500))
       .subscribe(data => {
-        console.clear()
-        console.log(model.layers)
-        console.table(data)
+        //console.clear()
+        //models.forEach(m => console.log(m))
+        //console.table(data)
       })
 
     return () => sub.unsubscribe() 
@@ -246,19 +275,22 @@ function App() {
 
   useEffect(() => {
     if(!play) {
-      //setPlay(true)
+      setPlay(true)
       return
     }
 
     if(!canvasRef.current)
       return
 
-    drawModel(modelRef.current)
+    //drawModel(modelRef.current)
     const canvas = canvasRef.current
     const ctx = canvas.getContext("2d");
 
     if(!ctx)
       return
+
+    epoch++;
+    console.log("epoch - " + epoch)
 
     const height = 1000;
     const width = height * 0.75
@@ -267,44 +299,78 @@ function App() {
     ctx.canvas.width = width;
     
     const sketch = new Sketch(canvas)
-    const player = new Player()
-    const pipes = new Pipes(player, () => setPoints(p => p + 1))
 
-    player.listenKey()
+    const players = [...Array(agentsNum)].map(() => new Player())
+    const pipes = new Pipes(players[0].xSpeed, () => {
+      models.forEach(m => {
+        if(m.lost)
+          return
+
+        m.points = m.points + 1
+      })
+      setPoints(p => p + 1)
+    })
+
+    //player.listenKey()
     sketch.draw((res) => {
-      player.draw(res)
       pipes.draw(res)
 
-      const nextCoords = player.getNextCoords()
-      const nearestPipe = pipes.getNearestPipe(nextCoords.x + player.boundingBox.width)
-      
-      const distanceFromPipe = nearestPipe.top.position.x - nextCoords.x - player.boundingBox.width
+      players.forEach((p, index) => {
+        if(models[index].lost)
+          return
 
-      const gameData: GameData = {
-        y: getNormalizedValue(nextCoords.y, { min: 0, max: height - player.boundingBox.height }),
-        distanceFromPipe: getNormalizedValue(distanceFromPipe, { min: 0, max: width - nextCoords.x }),
-        pipeTopHeight: getNormalizedValue(nearestPipe?.top.boundingBox.height, { min: 0, max: height }), 
-        pipeBottomHeight: getNormalizedValue(nearestPipe?.bottom.boundingBox.height, { min: 0, max: height }), 
-      }
-
-      stream.next(gameData)
-      const pred = model.getOutput(Object.values(gameData))[0]
-      drawModel(modelRef.current)
-
-      console.log(pred)
-      if(pred > 0.5)
-        player.jump()
+        p.draw(res)
+        const nextCoords = p.getNextCoords()
+        const nearestPipe = pipes.getNearestPipe(nextCoords.x + p.boundingBox.width)
+        
+        const distanceFromPipe = 
+          nearestPipe.top.position.x -
+          nearestPipe.top.boundingBox.width + 
+          nextCoords.x
 
 
-      if(pipes.isSomethingColliding(player) || sketch.isObjectOut(player)) {
+        const gameData: GameData = {
+          y: getNormalizedValue(nextCoords.y, { min: 0, max: height - p.boundingBox.height }),
+          distanceFromPipe: getNormalizedValue(distanceFromPipe, { min: 0, max: width - nextCoords.x }),
+          pipeTopHeight: getNormalizedValue(nearestPipe?.top.boundingBox.height, { min: 0, max: height }), 
+          pipeBottomHeight: getNormalizedValue(nearestPipe?.bottom.boundingBox.height, { min: 0, max: height }), 
+        }
+  
+        stream.next(gameData)
+        const pred = models[index].model.getOutput(Object.values(gameData))
+        drawModel(modelRef.current, models.find(m => m.lostIndex === -1)?.model)
+  
+        const jump = (pred[0] + 1) / 2
+        const notJump = (pred[1] + 1) / 2
+        if(jump > notJump)
+          p.jump()
+
+        if(pipes.isSomethingColliding(p) || sketch.isObjectOut(p)) {
+          models[index].lost = true;
+          models[index].lostIndex = Math.max(...models.map(m => m.lostIndex)) + 1
+        }
+      })
+
+      if(models.every(m => m.lost)) {
+        const bestModel = models.reduce((prev, current) => {
+          return (prev.lostIndex > current.lostIndex) 
+            ? prev 
+            : current
+        })
+        
+        const percentage = Math.pow(((epoch / 2) + 1), - 1)/2
+        console.log("lr - " + percentage)
+        console.log("points - " + bestModel.points)
+
+        models = [...createModels(bestModel.model, percentage)]
         setPlay(false);
-        model.randomizeWeights(0.5)
+        setPoints(0)
       }
     })
 
     return () => {
       sketch.destroy()
-      player.destroy()
+      players.forEach(p => p.destroy())
     }
   }, [canvasRef, play, modelRef])
 
